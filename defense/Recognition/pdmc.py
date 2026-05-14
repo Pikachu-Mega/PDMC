@@ -38,7 +38,7 @@ from utils.permutation_utils import permutation
 import csv
 
 def _csv_path(args):
-    # 统一落在 checkpoint_save 目录下
+    
     os.makedirs(args.checkpoint_save, exist_ok=True)
     return os.path.join(args.checkpoint_save, "metrics_steps.csv")
 
@@ -50,7 +50,7 @@ def csv_write_header_if_needed(args):
             w.writerow([
                 "time", "round", "phase", "epoch",
                 "clean_acc", "asr", "ra",
-                "c_acc",                      # 若你与 clean_acc 含义一致，可与其相同
+                "c_acc",                      
                 "time_sec", "peak_mem_MB",
                 "fwd", "bwd"
             ])
@@ -91,7 +91,7 @@ def step_begin(tag: str):
         torch.cuda.reset_peak_memory_stats()
     t0 = time.time()
     logging.info(f"[STEP-BEGIN] {tag}")
-    reset_pass_counters()   # 进入一个“步骤”时重置 fwd/bwd 统计
+    reset_pass_counters()  
     return t0
 
 def step_end(tag: str, t0: float):
@@ -156,13 +156,13 @@ def oneEpochTrain(args, model, train_data_loader, criterion, optimizer, schedule
     else:
         peak_mem = -1
 
-    # 写入 CSV（epoch级统计；phase 在调用处传入）
+  
     try:
         csv_write_row(args,
-                      getattr(args, "_round_idx", -1),        # 由调用处设置
-                      getattr(args, "_phase_tag", "epoch"),   # 由调用处设置
-                      getattr(args, "_epoch_idx", None),      # 由调用处设置
-                      clean_acc=None, asr=None, ra=None,      # epoch 内不评估效果指标
+                      getattr(args, "_round_idx", -1),       
+                      getattr(args, "_phase_tag", "epoch"),  
+                      getattr(args, "_epoch_idx", None),     
+                      clean_acc=None, asr=None, ra=None,      
                       c_acc=None,
                       time_sec=end_time - start_time,
                       peak_mem_MB=peak_mem,
@@ -525,10 +525,10 @@ class mc_repair_Class(defense):
             logging.info('using l2 regularization.......')
             regular = curve_models.curves.l2_regularizer(args.wd)
 
-        logging.info(f'$$$$$$$$$$$$$$$$$ Train_Curves {curve_name} $$$$$$$$$$$$$$$$$')
+        logging.info(f' Train_Curves {curve_name} ')
 
         for epoch in range(args.epochs):
-            # 在 mode_connectivity_Point 的 for epoch ... 循环里开头加入：
+          
             args._epoch_idx = epoch
             batch_loss = oneEpochTrain(args, model, data_train, criterion, optimizer, scheduler, self.device, regular)
             logging.info(f'Train_Curves on Clean Data, epoch:{epoch} ,epoch_loss: {batch_loss}')
