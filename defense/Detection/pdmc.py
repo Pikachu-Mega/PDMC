@@ -119,12 +119,12 @@ def extract_model_from_bezier_obj_input(
         tensor_B = weights_B[key].float().to(current_device)
 
         interpolated_tensor = (1 - t) * tensor_A + t * tensor_B
-        interpolated_weights[key] = interpolated_tensor.cpu()  # 移回CPU，标准做法，加载时会自动移到模型设备
+        interpolated_weights[key] = interpolated_tensor.cpu()  
 
     interpolated_model_instance = YOLO(model=model_A.model_name, task=model_A.task)
 
     interpolated_model_instance.model.load_state_dict(interpolated_weights)
-    interpolated_model_instance.to(current_device)  # 确保新模型也在正确的设备上
+    interpolated_model_instance.to(current_device)  
 
     return interpolated_model_instance
 
@@ -206,16 +206,10 @@ def pdmc_defense(args):
         print(f"**********************************")
         print(f'First stage, epochs {i}...............................')
 
-        # === [Step 1] Symmetric permutation on backdoored models (PDMC Stage-B)
-        # Goal: apply layer-wise neuron/channel permutation to break backdoor-aligned structure.
-        # Implementation: maximize clean-loss proxy (here maximize=False if your permutation()
-        #                 is coded to "find the most misaligned mapping" under this flag).
-        # Outcome: obtain permuted model_B used as the endpoint for the first connectivity step.
+     
         model_B = permutation(model_A, model_B, maximize=False, data_loader=clean_loader, device=device)
 
-        # === [Step 2] Symmetric permutation–driven mode connectivity (PDMC Stage-C)
-        # Goal: train a low-loss Bézier curve γ1 between (model_A, model_B); minimize E_t[L(γ1(t); D_clean)].
-        # Outcome: curve-trained intermediate model; we then evaluate ASR and restore the model from checkpoint.
+       
         model_tmp = finetune_bezier_interpolated_model_obj_input(
             args, model_A, model_B, args.t, f'first_stage_{i}', args.finetune_data
         )
@@ -227,16 +221,10 @@ def pdmc_defense(args):
         print(f"**********************************")
         print(f'Second stage, epochs {i}...............................')
 
-        # === [Step 3] Output-consistent permutation (PDMC Stage-D)
-        # Goal: align the curve-selected/intermediate model (model_tmp) back to the clean-loss basin of model_A
-        #       via output/feature-consistent assignment; implemented as a "maximize=True" variant in your API.
-        # Outcome: get model_A_per that is permutation-aligned to stabilize the next connectivity.
+       
         model_A_per = permutation(model_tmp, model_A, maximize=True, data_loader=clean_loader, device=device)
 
-        # === [Step 4] Consistency permutation–driven connectivity (PDMC Stage-E)
-        # Goal: train a second Bézier curve γ2 between (model_A_per, model_tmp) under clean-loss expectation,
-        #       yielding a purified model while preserving clean performance.
-        # Outcome: final purified model for this round; evaluate ASR and checkpoint it as new model_A.
+      
         model_tmp = finetune_bezier_interpolated_model_obj_input(
             args, model_A_per, model_tmp, args.t, f'second_stage_{i}', args.finetune_data
         )
